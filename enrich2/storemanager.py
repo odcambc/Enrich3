@@ -1,10 +1,11 @@
-from __future__ import print_function
+
 import os
 import logging
 import pandas as pd
 import collections
 import getpass
 import time
+from typing import Optional
 
 
 #: Dictionary specifying available scoring methods for the analysis
@@ -65,9 +66,9 @@ class StoreManager(object):
     store and directory management.
     """
 
-    store_suffix = None
+    store_suffix = Optional[str]
     has_store = True
-    treeview_class_name = None
+    treeview_class_name = Optional[str]
 
     def __init__(self):
         self.logger = logging.getLogger("{}.{}".format(__name__, self.__class__))
@@ -118,7 +119,7 @@ class StoreManager(object):
         for x in self.children:
             shared.extend(x.labels)
         shared = collections.Counter(shared)
-        shared = [x for x in shared.keys() if shared[x] == len(self.children)]
+        shared = [x for x in list(shared.keys()) if shared[x] == len(self.children)]
         return sorted(shared, key=lambda a: ELEMENT_LABELS.index(a))
 
     @property
@@ -285,7 +286,7 @@ class StoreManager(object):
         """
         Make sure the *value* is valid and set it.
         """
-        if value in SCORING_METHODS.keys():
+        if value in list(SCORING_METHODS.keys()):
             self._scoring_method = value
         else:
             raise ValueError(
@@ -427,7 +428,7 @@ class StoreManager(object):
         """
         Make sure the *value* is valid and set it.
         """
-        if value in LOGR_METHODS.keys():
+        if value in list(LOGR_METHODS.keys()):
             self._logr_method = value
         else:
             raise ValueError(
@@ -692,7 +693,7 @@ class StoreManager(object):
         Returns:
             bool: True if the key exists in the HDF5 store, else False.
         """
-        if key in self.store.keys():
+        if key in list(self.store.keys()):
             self.logger.info("Found existing '{}'".format(key))
             return True
         else:
@@ -712,7 +713,7 @@ class StoreManager(object):
 
         This method really needs a better name.
         """
-        if destination in self.store.keys():
+        if destination in list(self.store.keys()):
             # remove the current destination table because we are using append
             # append takes the "min_itemsize" argument, and put doesn't
             self.logger.info("Overwriting existing '{}'".format(destination))
