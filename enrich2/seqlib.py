@@ -190,6 +190,9 @@ class SeqLib(StoreManager):
         If *raw* is ``True``, the counts are stored under
         ``"/raw/label/counts"``; else ``"/main/label/counts"``.
         """
+        # Check if df_dict sequences are bytes, and convert to utf-8 if so
+        if isinstance(list(df_dict.keys())[0], bytes):
+            df_dict = {s.decode('utf-8') : v for (v,s) in enumerate(df_dict)}
         if len(list(df_dict.keys())) == 0:
             raise ValueError("Failed to count {} [{}]".format(label, self.name))
         df = pd.DataFrame.from_dict(df_dict, orient="index", dtype=np.int32)
@@ -278,7 +281,7 @@ class SeqLib(StoreManager):
         Checks ``'chastity'``, ``'min quality'``, ``'avg quality'``,
         ``'max N'``, and ``'remove unresolvable'``.
         Counts failed reads for later output and reports the filtered read if
-        desired. 
+        desired.
         Returns ``True`` if the read passes all filters, else ``False``.
         """
         filter_flags = dict()
@@ -301,13 +304,13 @@ class SeqLib(StoreManager):
                 filter_flags["avg quality"] = True
 
         if self.filters["max N"] >= 0:
-            if fq.sequence.upper().count("N") > self.filters["max N"]:
+            if fq.sequence.upper().count(b"N") > self.filters["max N"]:
                 self.filter_stats["max N"] += 1
                 filter_flags["max N"] = True
 
         if "remove unresolvable" in self.filters:  # OverlapSeqLib only
             if self.filters["remove unresolvable"]:
-                if "X" in fq.sequence:
+                if b"X" in fq.sequence:
                     self.filter_stats["remove unresolvable"] += 1
                     filter_flags["remove unresolvable"] = True
 
@@ -397,7 +400,9 @@ class SeqLib(StoreManager):
         if label is None:
             raise ValueError("No valid element labels [{}]".format(self.name))
         key = "/raw/{}/counts".format(label)
-        self.store.put(key, df, format="table", data_columns=df.columns, dtype=np.int32)
+        self.store.put(
+            key, df.astype(np.int32), format="table", data_columns=df.columns
+        )
 
     def counts_from_file(self, fname):
         """Get raw counts from a counts file instead of FASTQ_ file.
